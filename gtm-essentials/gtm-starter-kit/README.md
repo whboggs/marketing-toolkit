@@ -18,7 +18,7 @@ trigger, and new variables) and **GTM Essentials** (the shared variables).
 
 **Before it works, do these three things** (see [Setup](#setup-after-import)):
 set your GA4 Measurement ID, make sure the Meta Pixel base is loaded, and make
-sure something pushes `form_submit` to the dataLayer.
+sure your forms fire GTM's built-in `gtm.formSubmit` event.
 
 ---
 
@@ -28,9 +28,9 @@ sure something pushes `form_submit` to the dataLayer.
 
 | Tag | Type | Fires on | Notes |
 |---|---|---|---|
-| **Config - GA4** | Google tag | Initialization - All Pages | Tag ID = `{{GA4 - Measurement ID}}`. |
-| **GA4 - Event - Form Submit** | GA4 Event | `form_submit` | Event name `ga4e_form_submit`, Measurement ID `{{GA4 - Measurement ID}}`, **Once per event**. Parameters below. |
-| **Meta - Event - Lead - Form Submit** | Custom HTML | `form_submit` | Fires `fbq('track', 'Lead', …)` with page path / traffic source / ad placement, plus `eventID: {{cJS - Custom Event ID}}` for browser/server dedupe. |
+| **Configuration - GA4** | Google tag | Initialization - All Pages | Tag ID = `{{GA4 - Measurement ID}}`. |
+| **GA4 - Event - Form Submit** | GA4 Event | `gtm.formSubmit` | Event name `ga4e_form_submit`, Measurement ID `{{GA4 - Measurement ID}}`, **Once per event**. Parameters below. |
+| **Meta - Event - Lead - Form Submit** | Custom HTML | `gtm.formSubmit` | Fires `fbq('track', 'Lead', …)` with page path / traffic source / ad placement, plus `eventID: {{cJS - Custom Event ID}}` for browser/server dedupe. |
 | **Conversion Linker** | Conversion Linker | All Pages | Improves Google Ads click-ID cookie durability. |
 
 **GA4 - Event - Form Submit → event parameters:**
@@ -42,8 +42,10 @@ sure something pushes `form_submit` to the dataLayer.
 
 ### Trigger — folder *GTM Starter Kit*
 
-- **form_submit** — Custom Event, event name `form_submit` (fires on every
-  `form_submit` dataLayer event). Drives both the GA4 event and Meta tags.
+- **gtm.formSubmit** — Form Submission (GTM's built-in form listener; fires on
+  every `gtm.formSubmit` event, i.e. any native HTML form submit). *Wait for
+  Tags* and *Check Validation* are both off. Drives both the GA4 event and Meta
+  tags.
 
 ### Variables — folder *GTM Starter Kit*
 
@@ -100,16 +102,21 @@ Full details and source files are in
 2. **Meta Pixel base** must load before *Meta - Event - Lead - Form Submit*
    (the tag calls `fbq(...)`, so `fbq` has to exist). Add your Pixel base tag,
    ideally gated on consent.
-3. **`form_submit` event** must be pushed to the dataLayer. The toolkit's
-   [Elementor Listener](../../wordpress/elementor/elementor-listener-form-submit/)
-   pushes exactly this event; use it (or your platform's equivalent listener).
+3. **`gtm.formSubmit` event** must fire for your forms. The *gtm.formSubmit*
+   Form Submission trigger enables GTM's built-in listener, which catches
+   native HTML `<form>` submits. Forms that submit via AJAX/JavaScript without
+   a native submit event (Elementor, GHL, Wix, etc.) won't trigger it — for
+   those, install the platform listener from this toolkit (e.g. the
+   [Elementor Listener](../../wordpress/elementor/elementor-listener-form-submit/))
+   and point the tags at a Custom Event trigger for its dataLayer event
+   instead.
 
 ## Things to verify on import
 
 - **GA4 event Measurement ID** — confirm the tag's Measurement ID field resolves
-  to `{{GA4 - Measurement ID}}` (or point it at the *Config - GA4* Google tag).
+  to `{{GA4 - Measurement ID}}` (or point it at the *Configuration - GA4* Google tag).
 - **User-Provided Data** — not in the JSON (see above); add it via the UI.
-- **Trigger mapping** — *Config - GA4* should fire on **Initialization - All
+- **Trigger mapping** — *Configuration - GA4* should fire on **Initialization - All
   Pages** and *Conversion Linker* on **All Pages**; re-select if either didn't
   map.
 
