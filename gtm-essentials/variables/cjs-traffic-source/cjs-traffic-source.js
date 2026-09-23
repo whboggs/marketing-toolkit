@@ -1,7 +1,7 @@
 /*!
  * Marketing Toolkit — cJS – Traffic Source
- * Version: v2.0.0
- * Last updated: 2026-09-02
+ * Version: v2.0.1
+ * Last updated: 2026-09-23
  * https://github.com/whboggs/marketing-toolkit
  */
 
@@ -35,7 +35,7 @@ function() {
   var SOCIAL_DOMAINS = ['facebook.', 'fb.', 'instagram.', 'linkedin.', 'twitter.', 'x.com', 'youtube.', 'reddit.', 'pinterest.', 'tiktok.', 't.co'];
 
   // utm_source aliases -> the platform name this variable reports. Covers Meta's
-  // {{site_source_name}} values (fb / ig / msg / an) recommended in the UTM docs, so a paid
+  // site_source_name values (fb / ig / msg / an) recommended in the UTM docs, so a paid
   // Facebook click tagged utm_source=fb returns facebook_ads, not fb_ads.
   var SOURCE_ALIASES = {
     fb: 'facebook', ig: 'instagram', msg: 'messenger', an: 'audience_network',
