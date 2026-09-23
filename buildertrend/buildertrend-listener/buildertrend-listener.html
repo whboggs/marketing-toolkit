@@ -1,0 +1,122 @@
+<!--
+  Marketing Toolkit — Buildertrend Form Submit Listener
+  Version: v1.0.0
+  Last updated: 2026-09-23
+  https://github.com/whboggs/marketing-toolkit
+-->
+<script>
+/*!
+ * Buildertrend Form Submit Listener
+ * Loaded from https://github.com/whboggs/marketing-toolkit
+ *
+ * Detects Buildertrend Lead Capture Form submissions (the cross-origin
+ * buildertrend.net iframe) and pushes a buildertrend_form_submit event to
+ * the GTM dataLayer.
+ *
+ * HOW IT WORKS: the Buildertrend form never tells the parent page "submitted".
+ * It only posts resize messages ({height: N}) so the host page can size the
+ * iframe. When the form is on screen, N is the form's height (hundreds of px).
+ * When no form is rendered, which after load happens only on the success
+ * "Your information was successfully submitted." screen, N is Buildertrend's
+ * bare padding value of 50. So: once we've seen the full form,
+ * a later {height: 50} from the same iframe = successful submit.
+ *
+ * WARNING: this reads Buildertrend's undocumented resize behavior, which they
+ * can change without notice. Re-verify in GTM Preview after Buildertrend
+ * updates.
+ *
+ * Created by whboggs — https://whboggs.com — Get in touch for a free tracking audit.
+ *
+ * MIT License — Copyright (c) 2026 W.H. Boggs
+ * https://github.com/whboggs/marketing-toolkit/blob/main/LICENSE
+ */
+(function () {
+  'use strict';
+
+  // dataLayer event name pushed on a successful submit
+  var DATALAYER_EVENT = 'buildertrend_form_submit';
+
+  // Height Buildertrend reports when no form is rendered (its bottom padding
+  // constant). Seen on initial load (before the form config arrives) and on
+  // the success screen.
+  var EMPTY_HEIGHT = 50;
+
+  // Per-iframe state, keyed by the iframe's window: has the full form been
+  // shown yet, and has this form already fired?
+  var frames = [];
+
+  // Only trust messages from buildertrend.net (or a subdomain of it)
+  function isBuildertrendOrigin(origin) {
+    return /^https:\/\/([a-z0-9-]+\.)*buildertrend\.net$/i.test(origin || '');
+  }
+
+  // Pull the height out of the object-shaped resize message. Buildertrend
+  // also posts an "h=123" string version, which is scaled by 1.25 and
+  // measured differently, so it's ignored here.
+  function readHeight(data) {
+    if (data && typeof data === 'object' && typeof data.height === 'number') {
+      return data.height;
+    }
+    return null;
+  }
+
+  // Find (or create) the tracked state for the iframe that sent a message
+  function getFrameState(source) {
+    for (var i = 0; i < frames.length; i++) {
+      if (frames[i].source === source) return frames[i];
+    }
+    var state = { source: source, formSeen: false, fired: false };
+    frames.push(state);
+    return state;
+  }
+
+  // Look up the builderID from the sending iframe's src, for reporting
+  function getBuilderId(source) {
+    var iframes = document.getElementsByTagName('iframe');
+    for (var i = 0; i < iframes.length; i++) {
+      if (iframes[i].contentWindow === source) {
+        var match = /[?&]builderID=([^&#]+)/i.exec(iframes[i].src || '');
+        return match ? decodeURIComponent(match[1]) : undefined;
+      }
+    }
+    return undefined;
+  }
+
+  // Unique ID for Meta Pixel + CAPI deduplication
+  function generateEventId() {
+    return String(new Date().getTime()) + '_' + Math.random().toString(36).substring(2, 15);
+  }
+
+  window.addEventListener('message', function (e) {
+    try {
+      // Ignore everything that isn't a Buildertrend resize message
+      if (!isBuildertrendOrigin(e.origin)) return;
+      var height = readHeight(e.data);
+      if (height === null) return;
+
+      var state = getFrameState(e.source);
+
+      if (height > EMPTY_HEIGHT) {
+        // Full form is on screen. Arm detection and allow a new fire in
+        // case the form is shown again (e.g. the iframe was reloaded).
+        state.formSeen = true;
+        state.fired = false;
+        return;
+      }
+
+      // Form disappeared after being shown = success screen
+      if (height === EMPTY_HEIGHT && state.formSeen && !state.fired) {
+        state.fired = true;
+        state.formSeen = false;
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+          event: DATALAYER_EVENT,
+          bt_event_id: generateEventId(), // Meta Pixel + CAPI dedup key
+          bt_builder_id: getBuilderId(e.source),
+          bt_form_origin: e.origin
+        });
+      }
+    } catch (err) { /* never break the host page */ }
+  }, false);
+})();
+</script>
