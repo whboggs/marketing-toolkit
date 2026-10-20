@@ -39,7 +39,7 @@ The variable resolves an entry from that pageview's URL parameters, referrer, an
 | 14 | No signals, but a **fresh** `_fbc` cookie | `facebook_ads` |
 | 15 | Nothing identifying | `direct` |
 
-`utm_source` values are normalized through a small alias table before they are used, so Meta's `{{site_source_name}}` values come out readable: `fb` → `facebook`, `ig` → `instagram`, `msg` → `messenger`, `an` → `audience_network`, `x` → `twitter`, `googleads` / `adwords` → `google`, `bingads` / `bing` → `microsoft`. Anything else is lower-cased and snake_cased (`Facebook Ads` → `facebook_ads`).
+`utm_source` values typed as a hostname are first collapsed to their platform (`facebook.com` / `m.facebook.com` → `facebook`, `google.com` → `google`, `t.co` → `twitter`, `youtu.be` → `youtube`), so they classify and report exactly like the bare name; an unknown hostname keeps its host minus `www.` (`www.partnersite.com` → `partnersite_com`). Values are then normalized through a small alias table, so Meta's `{{site_source_name}}` values come out readable: `fb` → `facebook`, `ig` → `instagram`, `msg` → `messenger`, `an` → `audience_network`, `x` → `twitter`, `googleads` / `adwords` → `google`, `bingads` / `bing` → `microsoft`. Anything else is lower-cased and snake_cased (`Facebook Ads` → `facebook_ads`).
 
 Referrer domains are matched against the referrer's **hostname only**, with label boundaries: `google.` matches `google.com` and `news.google.de` but not `notgoogle.com`; `x.com` matches `x.com` and `www.x.com` but not `wix.com`; `bing.` never matches `plumbing.com`. A referrer from the site's own hostname is internal navigation and never classifies.
 

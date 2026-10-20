@@ -1,6 +1,6 @@
 /*!
  * Marketing Toolkit — cJS – Traffic Source
- * Version: v2.1.0
+ * Version: v2.2.0
  * Last updated: 2026-10-20
  * https://github.com/whboggs/marketing-toolkit
  */
@@ -70,9 +70,34 @@ function() {
     return lower(s).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   }
 
-  // Alias lookup, then slug — so utm_source=IG and utm_source=Instagram both give "instagram".
+  // Hostname labels that name a known platform -> the bare utm_source key it normally arrives as.
+  var HOST_PLATFORMS = {
+    facebook: 'facebook', fb: 'facebook', instagram: 'instagram', messenger: 'messenger',
+    linkedin: 'linkedin', lnkd: 'linkedin', twitter: 'twitter', x: 'x', t: 'x',
+    youtube: 'youtube', youtu: 'youtube', reddit: 'reddit', pinterest: 'pinterest',
+    tiktok: 'tiktok', snapchat: 'snapchat', threads: 'threads', quora: 'quora',
+    nextdoor: 'nextdoor', google: 'google', bing: 'bing', yahoo: 'yahoo',
+    duckduckgo: 'duckduckgo', ecosia: 'ecosia'
+  };
+
+  // A utm_source typed as a hostname collapses to its platform key ("m.facebook.com" -> "facebook",
+  // "t.co" -> "x"); an unknown hostname keeps its host minus "www.". Bare values pass through.
+  function platformKey(key) {
+    if (!key || key.indexOf('.') === -1) return key;
+    var host = key.replace(/^www\./, '');
+    var labels = host.split('.');
+    for (var i = 0; i < labels.length - 1; i++) {     // every label but the TLD
+      if (HOST_PLATFORMS.hasOwnProperty(labels[i]) && (labels[i] !== 't' || host === 't.co')) {
+        return HOST_PLATFORMS[labels[i]];
+      }
+    }
+    return host;
+  }
+
+  // Hostname clean-up, alias lookup, then slug — so utm_source=IG, Instagram, and
+  // l.instagram.com all give "instagram"; www.partnersite.com gives "partnersite_com".
   function sourceName(raw) {
-    var key = lower(raw);
+    var key = platformKey(lower(raw));
     if (!key) return '';
     return SOURCE_ALIASES.hasOwnProperty(key) ? SOURCE_ALIASES[key] : slug(key);
   }
@@ -204,7 +229,7 @@ function() {
   // ---------------------------------------------------------------------------------------
   function resolve() {
     var utmSourceRaw = param('utm_source');
-    var utmSource = lower(utmSourceRaw);
+    var utmSource = platformKey(lower(utmSourceRaw)); // "google.com" compares as "google"
     var utmMedium = lower(param('utm_medium'));
 
     var gclid   = param('gclid');
