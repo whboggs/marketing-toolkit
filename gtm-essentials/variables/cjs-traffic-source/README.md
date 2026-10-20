@@ -1,7 +1,7 @@
 # cJS – Traffic Source
 
 GTM Custom JavaScript Variable
-Last updated: September 2026
+Last updated: October 2026
 
 ---
 
@@ -23,20 +23,21 @@ The variable resolves an entry from that pageview's URL parameters, referrer, an
 
 | Priority | Signal | Returns |
 | --- | --- | --- |
-| 1 | `gclid`, `gbraid`, or `wbraid` in URL, or `utm_medium=cpc` / `paid_search` with a Google (or no) `utm_source` | `google_ads` |
-| 2 | `msclkid` in URL, or `utm_medium=cpc` / `paid_search` with `utm_source` = `bing` / `bingads` / `microsoft` | `microsoft_ads` |
-| 3 | `utm_medium=cpc` / `paid_search` with any other `utm_source` | `{source}_ads` |
-| 4 | `utm_medium=paid_social` | `{source}_ads` — `facebook_ads` when `utm_source` is missing |
+| 1 | **Paid social** (no `gclid` / `gbraid` / `wbraid` / `msclkid` in URL) — any of: `utm_medium` containing both "paid" and "social" (`paid_social`, `paidsocial`, `social-paid`); `utm_medium=paid` / `cpc` / `ppc` with a social signal (social `utm_source`, `fbclid` / `ttclid` in URL, or a social referrer); a social `utm_medium` (`social`, `social-media`, `sm`, `social-network`) **with** a `utm_campaign` | `{source}_ads` — the platform from the click ID or referrer, else `facebook_ads`, when `utm_source` is missing |
+| 2 | `gclid`, `gbraid`, or `wbraid` in URL, or `utm_medium=cpc` / `paid_search` with a Google (or no) `utm_source` | `google_ads` |
+| 3 | `msclkid` in URL, or `utm_medium=cpc` / `paid_search` with `utm_source` = `bing` / `bingads` / `microsoft` | `microsoft_ads` |
+| 4 | `utm_medium=cpc` / `paid_search` with any other `utm_source` | `{source}_ads` |
 | 5 | `ttclid` in URL | `tiktok_ads` |
 | 6 | `utm_medium=email` | `{source}_email`, or `email` when `utm_source` is missing |
-| 7 | Any other `utm_source` | `{source}_{medium}` (e.g. `partner_referral`), or `{source}` when there is no medium |
-| 8 | Referrer host is a search engine (`google.`, `bing.`, `yahoo.`, `duckduckgo.`, `ecosia.`) | `{engine}_organic` — a Google referrer with a **fresh** `_gcl_aw` cookie upgrades to `google_ads` |
-| 9 | Referrer host is a social network (`facebook.`, `fb.`, `instagram.`, `linkedin.`, `twitter.`, `x.com`, `t.co`, `youtube.`, `reddit.`, `pinterest.`, `tiktok.`), or `fbclid` in URL with any external referrer | `{network}_organic` — a Facebook/Instagram referrer with a **fresh** `_fbc` cookie and **no** `fbclid` in the URL upgrades to `facebook_ads` |
-| 10 | Any other external referrer | `referral` |
-| 11 | `fbclid` in URL with no referrer at all | `facebook_organic` |
-| 12 | No signals, but a **fresh** `_gcl_aw` cookie | `google_ads` |
-| 13 | No signals, but a **fresh** `_fbc` cookie | `facebook_ads` |
-| 14 | Nothing identifying | `direct` |
+| 7 | A social `utm_medium` with **no** `utm_campaign` | `{source}_organic` (e.g. `instagram_organic`) |
+| 8 | Any other `utm_source` | `{source}_{medium}` (e.g. `partner_referral`), or `{source}` when there is no medium |
+| 9 | Referrer host is a search engine (`google.`, `bing.`, `yahoo.`, `duckduckgo.`, `ecosia.`) | `{engine}_organic` — a Google referrer with a **fresh** `_gcl_aw` cookie upgrades to `google_ads` |
+| 10 | Referrer host is a social network (`facebook.`, `fb.`, `instagram.`, `linkedin.`, `twitter.`, `x.com`, `t.co`, `youtube.`, `reddit.`, `pinterest.`, `tiktok.`), or `fbclid` in URL with any external referrer | `{network}_organic` — a Facebook/Instagram referrer with a **fresh** `_fbc` cookie and **no** `fbclid` in the URL upgrades to `facebook_ads` |
+| 11 | Any other external referrer | `referral` |
+| 12 | `fbclid` in URL with no referrer at all | `facebook_organic` |
+| 13 | No signals, but a **fresh** `_gcl_aw` cookie | `google_ads` |
+| 14 | No signals, but a **fresh** `_fbc` cookie | `facebook_ads` |
+| 15 | Nothing identifying | `direct` |
 
 `utm_source` values are normalized through a small alias table before they are used, so Meta's `{{site_source_name}}` values come out readable: `fb` → `facebook`, `ig` → `instagram`, `msg` → `messenger`, `an` → `audience_network`, `x` → `twitter`, `googleads` / `adwords` → `google`, `bingads` / `bing` → `microsoft`. Anything else is lower-cased and snake_cased (`Facebook Ads` → `facebook_ads`).
 
@@ -81,7 +82,15 @@ To distinguish paid from organic, paid social ad URLs must include UTMs followin
 | LinkedIn Ads | linkedin | paid_social |
 | TikTok Ads (paid) | tiktok | paid_social |
 
-Any click with `fbclid` that does NOT have `utm_medium=paid_social` is treated as organic. Without consistent UTM tagging on ad URLs, paid and organic Facebook traffic will be misattributed.
+`paid_social` is the recommended value, but the variable also accepts the other common ways social ads get tagged:
+
+- any `utm_medium` spelling both "paid" and "social" — `paidsocial`, `social-paid`, `Paid Social`;
+- `utm_medium=paid` (Meta's own URL-builder default), `cpc`, or `ppc` with a social signal — a social `utm_source` (`facebook`, `fb`, `meta`, `instagram`, `ig`, `messenger`, `msg`, `an`, `tiktok`, `linkedin`, `twitter`, `x`, `reddit`, `pinterest`, `youtube`, `snapchat`, `threads`, `quora`, `nextdoor`, or a hostname such as `facebook.com`), an `fbclid` / `ttclid`, or a social referrer;
+- a social `utm_medium` (`social`, `social-media`, `sm`, `social-network`) **with** a `utm_campaign`. The campaign is what separates an ad from a post: `utm_medium=social` with no campaign returns `{source}_organic`.
+
+A Google or Microsoft click ID in the URL still wins as paid search. Tag organic posts **without** a `utm_campaign` — an organic post tagged `utm_medium=social&utm_campaign=…` reads as paid.
+
+Any click with `fbclid` and none of the paid signals above is treated as organic. Without consistent UTM tagging on ad URLs, paid and organic Facebook traffic will be misattributed.
 
 The one exception is the `_fbc` cookie rescue: when a Facebook or Instagram referrer arrives with **no** `fbclid` in the URL but the Pixel's `_fbc` cookie was created within the last 30 minutes, the click's parameter was lost in transit (consent redirect, URL rewrite) and the visit is credited to `facebook_ads`. An `_fbc` sitting next to an `fbclid` proves nothing — the Pixel writes `_fbc` from whichever `fbclid` it sees, organic or paid — so that case stays organic.
 
@@ -129,7 +138,7 @@ For most flows this is fine — the new tab usually opens with the source URL in
 
 - **No cross-session attribution.** Closing the browser ends the session. A user who visits via Facebook Ads on Monday and converts via direct on Wednesday will be attributed to direct on Wednesday. This is intentional last-touch behavior; use MTK Attribution for first-touch and journey reporting.
 - **iOS Safari ITP** restricts cookie and storage lifetimes on Apple devices. The `_fbc` and `_gcl_aw` cookies may have shortened lifespans, which can affect the cookie rescues specifically.
-- **Untagged Meta ads look organic.** A paid Facebook click that arrives with `fbclid` but no `utm_medium=paid_social` returns `facebook_organic`. This is by design — see above.
+- **Untagged Meta ads look organic.** A paid Facebook click that arrives with `fbclid` but no paid-social `utm_medium` (see above) returns `facebook_organic`. This is by design — see above.
 - **Untagged landing pages with no referrer are direct.** If a user lands with no UTMs, no click ID, no referrer, and no fresh platform cookie, the visit is `direct`, and a later form submit on an internal page inherits that. UTM-tag your landing pages.
 - **Referrer-based organic detection** relies on `document.referrer` on the entry pageview. If the landing page is reached via a redirect that strips the referrer, the visit resolves as `direct` unless a fresh platform cookie rescues it.
 - **Unknown referrers are bucketed as `referral`**, not reported by hostname, to keep the value's cardinality low in Meta and GA4 reports.
