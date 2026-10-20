@@ -1,7 +1,7 @@
 /*!
  * Marketing Toolkit — cJS – Traffic Source
- * Version: v2.0.1
- * Last updated: 2026-09-23
+ * Version: v2.1.0
+ * Last updated: 2026-10-20
  * https://github.com/whboggs/marketing-toolkit
  */
 
@@ -26,7 +26,20 @@ function() {
 
   var STORE_KEY = 'cjs_traffic_source';         // sessionStorage key: {"v": "<source>", "t": <last activity ms>}
   var SESSION_TIMEOUT = 30 * 60 * 1000;         // 30 minutes, GA-style — idle longer than this = new entry
-  var PAID_SOCIAL_MEDIUM = 'paid_social';       // the utm_medium ad URLs must carry to count as paid social
+  var PAID_SOCIAL_MEDIUM = 'paid_social';       // the canonical paid-social utm_medium (always paid social)
+
+  // Paid Social, beyond paid_social — mirrors the MTK engine (v7.0):
+  //   1. a medium containing both "paid" and "social" (paidsocial, social-paid) — on its own;
+  //   2. a generic paid medium (PAID_GENERIC_MEDIUMS) with a social signal: a social utm_source,
+  //      an fbclid / ttclid, or a social referrer;
+  //   3. a social medium (SOCIAL_MEDIUMS) WITH a utm_campaign. Without a campaign it's organic.
+  // A Google / Microsoft click ID still wins as paid search.
+  var PAID_GENERIC_MEDIUMS = ['paid', 'cpc', 'ppc'];
+  var SOCIAL_MEDIUMS = ['social', 'social-media', 'social_media', 'social media', 'sm', 'social-network', 'social_network', 'social network'];
+
+  // utm_source spellings that name a social platform (hostname styles like m.facebook.com match too).
+  var SOCIAL_SOURCES = ['facebook', 'fb', 'meta', 'instagram', 'ig', 'messenger', 'msg', 'an', 'audience_network',
+    'tiktok', 'linkedin', 'twitter', 'x', 'reddit', 'pinterest', 'youtube', 'snapchat', 'threads', 'quora', 'nextdoor'];
 
   // Referrer domain lists — same fragments as the MTK engine defaults. A trailing dot means
   // "this label anywhere in the host" (google.com, news.google.de); an inner dot means "this
@@ -62,6 +75,30 @@ function() {
     var key = lower(raw);
     if (!key) return '';
     return SOURCE_ALIASES.hasOwnProperty(key) ? SOURCE_ALIASES[key] : slug(key);
+  }
+
+  // Is this value in the list? (ES5 stand-in for Array.prototype.includes.)
+  function inList(value, list) {
+    for (var i = 0; i < list.length; i++) { if (list[i] === value) return true; }
+    return false;
+  }
+
+  // Rule 1: the canonical paid-social medium, or any spelling carrying both "paid" and "social".
+  function isPaidSocialMedium(medium) {
+    if (!medium) return false;
+    if (medium === PAID_SOCIAL_MEDIUM) return true;
+    return medium.indexOf('paid') > -1 && medium.indexOf('social') > -1;
+  }
+
+  // Does utm_source name a social platform? Bare names (facebook) and hostnames (m.facebook.com).
+  function isSocialUtmSource(source) {
+    if (!source) return false;
+    if (inList(source, SOCIAL_SOURCES)) return true;
+    var parts = source.replace(/^www\./, '').split('.');
+    for (var i = 0; i < parts.length - 1; i++) {     // every label but the TLD
+      if (inList(parts[i], SOCIAL_SOURCES)) return true;
+    }
+    return false;
   }
 
   // sessionStorage access that degrades to "no persistence" in private browsing / blocked storage.
@@ -177,18 +214,36 @@ function() {
     var fbclid  = param('fbclid');
     var ttclid  = param('ttclid');
 
-    // 1. Paid Search — any Google / Microsoft click ID, or utm_medium=cpc / paid_search
+    var hasPaidSearchClickId = gclid || gbraid || wbraid || msclkid;
+    var socialMedium = inList(utmMedium, SOCIAL_MEDIUMS);
+
+    // The social platform behind this visit: typed source first, then click ID, then referrer.
+    function socialName() {
+      if (utmSourceRaw) return sourceName(utmSourceRaw);
+      if (ttclid) return 'tiktok';
+      if (fbclid) return 'facebook';
+      if (hasReferrer && matchesList(SOCIAL_DOMAINS)) return referrerName();
+      return 'facebook';
+    }
+
+    // 1. Paid Social — see PAID_GENERIC_MEDIUMS / SOCIAL_MEDIUMS. Checked before paid search so
+    //    utm_source=facebook&utm_medium=cpc is a social ad; a Google / Microsoft click ID still
+    //    wins. fbclid alone never proves a paid click (Meta appends it to organic posts too).
+    var socialSignal = isSocialUtmSource(utmSource) || fbclid || ttclid ||
+      (hasReferrer && matchesList(SOCIAL_DOMAINS));
+    if (!hasPaidSearchClickId && (
+        isPaidSocialMedium(utmMedium) ||
+        (inList(utmMedium, PAID_GENERIC_MEDIUMS) && socialSignal) ||
+        (socialMedium && param('utm_campaign')))) {
+      return socialName() + '_ads';
+    }
+
+    // 2. Paid Search — any Google / Microsoft click ID, or utm_medium=cpc / paid_search
     //    (manual tagging with auto-tagging off, or a click ID stripped by a redirect).
     if (gclid || gbraid || wbraid || msclkid || utmMedium === 'cpc' || utmMedium === 'paid_search') {
       if (msclkid || utmSource === 'bing' || utmSource === 'bingads' || utmSource === 'microsoft') return 'microsoft_ads';
       if (!utmSource || utmSource === 'google' || utmSource === 'googleads' || utmSource === 'adwords') return 'google_ads';
       return sourceName(utmSourceRaw) + '_ads';    // some other paid-search network, tagged by hand
-    }
-
-    // 2. Paid Social — REQUIRES the utm_medium convention. Meta appends fbclid to organic posts
-    //    too, so fbclid / _fbc alone can never prove a paid click.
-    if (utmMedium === PAID_SOCIAL_MEDIUM) {
-      return (sourceName(utmSourceRaw) || 'facebook') + '_ads';
     }
 
     // 3. TikTok Ads — ttclid is paid-only (organic TikTok links don't carry it).
@@ -199,13 +254,16 @@ function() {
       return utmSource ? sourceName(utmSourceRaw) + '_email' : 'email';
     }
 
-    // 5. Any other tagged campaign — "<source>_<medium>" (partner_referral, podcast_sponsorship),
+    // 5. Organic Social (tagged) — a social medium with no utm_campaign is a post, not an ad.
+    if (socialMedium) return socialName() + '_organic';
+
+    // 6. Any other tagged campaign — "<source>_<medium>" (partner_referral, podcast_sponsorship),
     //    or just "<source>" when there is no medium.
     if (utmSource) {
       return utmMedium ? sourceName(utmSourceRaw) + '_' + slug(utmMedium) : sourceName(utmSourceRaw);
     }
 
-    // 6. Untagged arrival with an external referrer.
+    // 7. Untagged arrival with an external referrer.
     if (hasReferrer) {
       if (matchesList(SEARCH_DOMAINS)) {
         // Same-platform upgrade: an ad click FROM google.com whose gclid was lost in transit
@@ -227,16 +285,16 @@ function() {
       return 'referral';                           // some other site we don't bucket
     }
 
-    // 7. fbclid with no referrer at all (some in-app browsers strip it) — still an organic Meta click.
+    // 8. fbclid with no referrer at all (some in-app browsers strip it) — still an organic Meta click.
     if (fbclid) return 'facebook_organic';
 
-    // 8. Cookie rescue — last resort before Direct. A FRESH platform cookie means an ad click just
+    // 9. Cookie rescue — last resort before Direct. A FRESH platform cookie means an ad click just
     //    happened but its URL signal never reached us (consent redirect, URL rewrite, tag first
     //    firing mid-session). Stale cookies never classify.
     if (freshGclid()) return 'google_ads';
     if (freshFbclid()) return 'facebook_ads';
 
-    // 9. Nothing identifying — typed URL, bookmark, app, dark social.
+    // 10. Nothing identifying — typed URL, bookmark, app, dark social.
     return 'direct';
   }
 
