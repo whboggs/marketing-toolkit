@@ -8,7 +8,7 @@ Last updated: August 2026
 ## Overview
 
 `gtm-essentials-variables.json` is a Google Tag Manager **container export**
-that creates every GTM Essentials variable in one import — 24 variables, filed
+that creates every GTM Essentials variable in one import — 17 variables, filed
 under a **GTM Essentials** folder, plus GTM's standard built-in variables
 switched on. Use it instead of building the variables one by one from the
 sibling folders.

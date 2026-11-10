@@ -24,7 +24,7 @@ Import it to create all of the variables below at once, filed under a
 Placeholder account/container IDs (`0`) are remapped into whatever container you
 import into.
 
-## What it creates (24 variables)
+## What it creates (17 variables)
 
 **First-party cookies** — `1PC - <cookie>` (1st-Party Cookie variables):
 
