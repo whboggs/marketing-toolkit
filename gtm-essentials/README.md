@@ -38,6 +38,7 @@ import into.
 | `1PC - _ttp` | `_ttp` | TikTok |
 | `1PC - _twclid` | `_twclid` | Twitter / X |
 | `1PC - li_fat_id` | `li_fat_id` | LinkedIn |
+| `1PC - _ga` | `_ga` | Google Analytics (client ID — used as Meta `external_id`) |
 
 > Cookie names are the common defaults for each platform — adjust the `name`
 > parameter if a site stores a click ID under a different cookie.

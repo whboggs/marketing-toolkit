@@ -1,0 +1,31 @@
+<!--
+  Marketing Toolkit — Meta Pixel — Lead Event (Advanced Matching)
+  Version: v1.0.0
+  Last updated: 2026-11-10
+  https://github.com/whboggs/marketing-toolkit
+-->
+<script>
+  // Note: Requires Meta - Pixel ID, DLV - Email, DLV - Phone, DLV - First Name,
+  // DLV - Last Name, 1PC - _ga, cJS - Traffic Source, cJS - Ad Placement,
+  // and cJS - Custom Event ID.
+
+  // Advanced matching: user info only works through init, not the Lead event.
+  // The Pixel normalizes + hashes these and skips any that are empty.
+  fbq('init', '{{Meta - Pixel ID}}', {
+    em: {{DLV - Email}}, // Email
+    ph: {{DLV - Phone}}, // Phone, must include the country code
+    fn: {{DLV - First Name}}, // First name
+    ln: {{DLV - Last Name}}, // Last name
+    external_id: {{1PC - _ga}} // Persistent visitor ID (Google Analytics cookie)
+  });
+
+  fbq('track', 'Lead', {
+    lead_type: 'Form Submit', // Define Lead Type
+    // form_name: // (Optional) Translate form ID to Form Name via LUT or Variable
+    content_name: '{{Page Path}}', // Finds page path
+    traffic_source: '{{cJS - Traffic Source}}', // Finds Last Touch traffic source
+    ad_placement: '{{cJS - Ad Placement}}' // Finds ad placement
+  }, {
+    eventID: '{{cJS - Custom Event ID}}' // Meta's browser/server dedupe key
+  });
+</script>

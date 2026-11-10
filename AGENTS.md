@@ -1,11 +1,13 @@
-# Meta Lead tag lives in two places — keep them in sync
+# Meta Lead tags live in two places — keep them in sync
 
-The `fbq('track', 'Lead', …)` snippet exists in BOTH:
+Each `fbq('track', 'Lead', …)` snippet exists in BOTH its own folder and the
+GTM Starter Kit (`gtm-essentials/gtm-starter-kit/gtm-starter-kit.json`, the
+tag's `html` parameter, JSON-escaped):
 
-1. `meta/pixel/lead/chtml-lead-config.html`
-2. the **Meta - Event - Lead - Form Submit** tag inside
-   `gtm-essentials/gtm-starter-kit/gtm-starter-kit.json` (the `html` parameter,
-   JSON-escaped)
+| Snippet | Folder file | Starter Kit tag |
+|---|---|---|
+| Basic | `meta/pixel/lead/basic/chtml-lead-config.html` | **Meta - Event - Lead - Form Submit** |
+| Advanced Matching | `meta/pixel/lead/advanced-matching/chtml-lead-advanced-matching.html` | **Meta - Event - Lead - Form Submit (Advanced Matching)** |
 
-These must always match. Whenever one is updated, apply the same change to the
-other in the same commit — and update both folders' READMEs to match.
+Each pair must always match. Whenever one is updated, apply the same change to
+the other in the same commit — and update both folders' READMEs to match.

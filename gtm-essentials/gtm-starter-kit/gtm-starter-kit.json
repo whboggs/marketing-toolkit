@@ -134,6 +134,32 @@
       {
         "accountId": "0",
         "containerId": "0",
+        "tagId": "5",
+        "name": "Meta - Event - Lead - Form Submit (Advanced Matching)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<!--\n  Marketing Toolkit — Meta Pixel — Lead Event (Advanced Matching)\n  Version: v1.0.0\n  Last updated: 2026-11-10\n  https://github.com/whboggs/marketing-toolkit\n-->\n<script>\n  // Note: Requires Meta - Pixel ID, DLV - Email, DLV - Phone, DLV - First Name,\n  // DLV - Last Name, 1PC - _ga, cJS - Traffic Source, cJS - Ad Placement,\n  // and cJS - Custom Event ID.\n\n  // Advanced matching: user info only works through init, not the Lead event.\n  // The Pixel normalizes + hashes these and skips any that are empty.\n  fbq('init', '{{Meta - Pixel ID}}', {\n    em: {{DLV - Email}}, // Email\n    ph: {{DLV - Phone}}, // Phone, must include the country code\n    fn: {{DLV - First Name}}, // First name\n    ln: {{DLV - Last Name}}, // Last name\n    external_id: {{1PC - _ga}} // Persistent visitor ID (Google Analytics cookie)\n  });\n\n  fbq('track', 'Lead', {\n    lead_type: 'Form Submit', // Define Lead Type\n    // form_name: // (Optional) Translate form ID to Form Name via LUT or Variable\n    content_name: '{{Page Path}}', // Finds page path\n    traffic_source: '{{cJS - Traffic Source}}', // Finds Last Touch traffic source\n    ad_placement: '{{cJS - Ad Placement}}' // Finds ad placement\n  }, {\n    eventID: '{{cJS - Custom Event ID}}' // Meta's browser/server dedupe key\n  });\n</script>"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "supportDocumentWrite",
+            "value": "false"
+          }
+        ],
+        "firingTriggerId": [
+          "1"
+        ],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "paused": true,
+        "fingerprint": "0",
+        "parentFolderId": "2"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
         "tagId": "4",
         "name": "Conversion Linker",
         "type": "gclidw",
@@ -480,6 +506,27 @@
       {
         "accountId": "0",
         "containerId": "0",
+        "variableId": "26",
+        "name": "1PC - _ga",
+        "type": "k",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "_ga"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "decodeCookie",
+            "value": "true"
+          }
+        ],
+        "fingerprint": "0",
+        "parentFolderId": "1"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
         "variableId": "17",
         "name": "cJS - Traffic Source",
         "type": "jsm",
@@ -630,6 +677,126 @@
         ],
         "fingerprint": "0",
         "parentFolderId": "1"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "27",
+        "name": "Meta - Pixel ID",
+        "type": "c",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "value",
+            "value": "000000000000000"
+          }
+        ],
+        "fingerprint": "0",
+        "parentFolderId": "2"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "28",
+        "name": "DLV - Email",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "email"
+          }
+        ],
+        "fingerprint": "0",
+        "parentFolderId": "2"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "29",
+        "name": "DLV - Phone",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "phone"
+          }
+        ],
+        "fingerprint": "0",
+        "parentFolderId": "2"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "30",
+        "name": "DLV - First Name",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "first_name"
+          }
+        ],
+        "fingerprint": "0",
+        "parentFolderId": "2"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "31",
+        "name": "DLV - Last Name",
+        "type": "v",
+        "parameter": [
+          {
+            "type": "INTEGER",
+            "key": "dataLayerVersion",
+            "value": "2"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "setDefaultValue",
+            "value": "false"
+          },
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "last_name"
+          }
+        ],
+        "fingerprint": "0",
+        "parentFolderId": "2"
       }
     ],
     "fingerprint": "0"
