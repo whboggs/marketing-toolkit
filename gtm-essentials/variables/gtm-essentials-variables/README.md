@@ -47,6 +47,7 @@ you import into, so the file works in any account.
 | `1PC - _ttp` | `_ttp` | TikTok |
 | `1PC - _twclid` | `_twclid` | Twitter / X |
 | `1PC - li_fat_id` | `li_fat_id` | LinkedIn |
+| `1PC - _ga` | `_ga` | Google Analytics (client ID — used as Meta `external_id`) |
 
 **Session variables** (Custom JS):
 

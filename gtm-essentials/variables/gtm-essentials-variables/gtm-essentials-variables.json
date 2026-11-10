@@ -310,6 +310,27 @@
       {
         "accountId": "0",
         "containerId": "0",
+        "variableId": "25",
+        "name": "1PC - _ga",
+        "type": "k",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "name",
+            "value": "_ga"
+          },
+          {
+            "type": "BOOLEAN",
+            "key": "decodeCookie",
+            "value": "true"
+          }
+        ],
+        "fingerprint": "0",
+        "parentFolderId": "1"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
         "variableId": "17",
         "name": "cJS - Traffic Source",
         "type": "jsm",

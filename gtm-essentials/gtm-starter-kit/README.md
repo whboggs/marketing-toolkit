@@ -31,6 +31,7 @@ sure your forms fire GTM's built-in `gtm.formSubmit` event.
 | **Configuration - GA4** | Google tag | Initialization - All Pages | Tag ID = `{{GA4 - Measurement ID}}`. |
 | **GA4 - Event - Form Submit** | GA4 Event | `gtm.formSubmit` | Event name `ga4e_form_submit`, Measurement ID `{{GA4 - Measurement ID}}`, **Once per event**. Parameters below. |
 | **Meta - Event - Lead - Form Submit** | Custom HTML | `gtm.formSubmit` | Fires `fbq('track', 'Lead', …)` with page path / traffic source / ad placement, plus `eventID: {{cJS - Custom Event ID}}` for browser/server dedupe. |
+| **Meta - Event - Lead - Form Submit (Advanced Matching)** | Custom HTML | `gtm.formSubmit` | **Imports paused.** The same Lead event plus advanced matching (email, phone, name, `external_id`). Use it *instead of* the basic tag — see [Switching to Advanced Matching](#switching-to-advanced-matching). [Source](../../meta/pixel/lead/advanced-matching/). |
 | **Conversion Linker** | Conversion Linker | All Pages | Improves Google Ads click-ID cookie durability. |
 
 **GA4 - Event - Form Submit → event parameters:**
@@ -51,6 +52,14 @@ sure your forms fire GTM's built-in `gtm.formSubmit` event.
 
 - **GA4 - Measurement ID** — Constant, `G-0000000000`. **Replace with your real
   Measurement ID** — every GA4 tag reads from this one place.
+- **Meta - Pixel ID** — Constant, `000000000000000`. Used only by the Advanced
+  Matching Lead tag. **Replace with the Pixel's real ID** — it must match the
+  base Pixel, or `fbq('init')` starts a second Pixel.
+- **DLV - Email**, **DLV - Phone**, **DLV - First Name**, **DLV - Last Name** —
+  Data Layer Variables for the Advanced Matching Lead tag. They import
+  pointing at placeholder keys (`email`, `phone`, `first_name`, `last_name`);
+  re-point each at the key your form listener pushes. `DLV - Phone` **must
+  include the country code** — Meta can't match a phone number without one.
 
 > **User-Provided Data variable — add this one by hand.** GTM's User-Provided
 > Data variable has no stable container-export type, so it isn't in the JSON.
@@ -80,7 +89,8 @@ Full details and source files are in
 > `.json` file can't carry an inline comment, so this reminder lives here.)
 
 - **First-party cookie variables** (`1PC - …`): `_fbc`, `_fbp`, `fbclid`,
-  `_gcl_aw`, `_uetmsclkid`, `_ttp`, `_twclid`, `li_fat_id`.
+  `_gcl_aw`, `_uetmsclkid`, `_ttp`, `_twclid`, `li_fat_id`, `_ga` (the GA
+  client ID, sent as Meta's `external_id` by the Advanced Matching Lead tag).
 - **`cJS - Traffic Source`** — last-touch traffic source
   ([source](../variables/cjs-traffic-source/cjs-traffic-source.js)).
 - **`cJS - Ad Placement`** — `utm_placement`, persisted per session
@@ -110,6 +120,21 @@ Full details and source files are in
    [Elementor Listener](../../wordpress/elementor/elementor-listener-form-submit/))
    and point the tags at a Custom Event trigger for its dataLayer event
    instead.
+
+## Switching to Advanced Matching
+
+The **Meta - Event - Lead - Form Submit (Advanced Matching)** tag imports
+**paused**: it fires on the same trigger as the basic Lead tag, so running
+both would count every lead twice, and it needs a real Pixel ID first.
+
+1. Set **Meta - Pixel ID** to the base Pixel's ID.
+2. Re-point the four **DLV -** variables at your form listener's keys (the
+   [tag's README](../../meta/pixel/lead/advanced-matching/) has a table per
+   platform). Make sure `DLV - Phone` includes the country code.
+3. **Pause** *Meta - Event - Lead - Form Submit* and **unpause** the Advanced
+   Matching tag.
+4. Preview, submit a test form, and check the `ev=Lead` request for
+   `ud[em]` / `ud[ph]` hashes.
 
 ## Things to verify on import
 
