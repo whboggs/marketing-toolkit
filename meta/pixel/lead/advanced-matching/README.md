@@ -33,7 +33,7 @@ Each `DLV -` variable is a **Data Layer Variable**. Set its *Data Layer Variable
 
 | Platform (listener) | `DLV - Email` | `DLV - Phone` | `DLV - First Name` | `DLV - Last Name` |
 |---|---|---|---|---|
-| GoHighLevel ([form-submit bridge](../../../../go-high-level/gtm-tags/form-submit-bridge/)) | `ghl_email` | `ghl_phone` | `ghl_first_name` | `ghl_last_name` |
+| GoHighLevel ([form-submit bridge](../../../../go-high-level/gtm/gtm-tags/form-submit-bridge/)) | `ghl_email` | `ghl_phone` | `ghl_first_name` | `ghl_last_name` |
 | Wix ([form listener](../../../../wix/form-submission-listener/)) | `wix_email` | `wix_phone` ⚠️ | `wix_first_name` | `wix_last_name` |
 | Anything else | the key your listener pushes | | | |
 
