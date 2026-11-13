@@ -1,0 +1,21 @@
+<script>
+  // Fire Meta Pixel Lead event with advanced matching from GHL form submit.
+  // Re-init scopes the user data to this event, then track sends it.
+  fbq('init', '{{Meta Pixel ID}}', {
+    em: {{cJS - GHL Email (Normalized)}},
+    ph: {{cJS - GHL Phone (E.164)}},
+    fn: {{DLV - GHL First Name}},
+    ln: {{DLV - GHL Last Name}}
+  });
+
+  fbq('track', 'Lead', {
+    content_name: 'GHL Form Submit',
+    content_category: 'Lead',
+    lead_type: 'ghl_form_submit',
+    form_id: {{DLV - GHL Form ID}},
+    ad_placement: {{cJS - Ad Placement}},
+    traffic_source: {{cJS - Traffic Source}}
+  }, {
+    eventID: {{DLV - GHL Event ID}}
+  });
+</script>
