@@ -36,6 +36,12 @@ adding the hidden form fields with exactly the right names.
   it (channel wording, landing page as a path). The Attributer drilldowns are
   treated as a starting guess to confirm with the user, not a mapping — what
   lands in them depends on which UTMs that client actually sends.
+- **GoHighLevel behind a webhook** — for a site's own form that posts to a
+  GHL Inbound Webhook, the skill fetches
+  `…/docs/gohighlevel/webhook-custom-fields.md`, which lists the GHL contact
+  custom fields to create (from the live field map), how to create them
+  through GHL's API with the user's token, and the workflow steps left to the
+  user.
 - **A final ordering pass** — First, then Last, then IDs, then Insights, on the
   form and in the field map, so a lead record reads as one first-touch story
   then one last-touch story instead of alternating dimension by dimension.
@@ -76,7 +82,8 @@ data source (`whboggs/mtk-attribution`, `src/engine.js`).
 What still needs updating by hand:
 
 - a docs page added, removed, or moved — the URLs and platform slugs are
-  hardcoded in the skill, `/products/attribution/docs/fields.md` included
+  hardcoded in the skill, `/products/attribution/docs/fields.md` and the
+  GoHighLevel webhook guide's `.md` included
 - a platform changing its install method
 - Attributer renaming a field or changing a token, which breaks the remapping
   table (https://help.attributer.io)

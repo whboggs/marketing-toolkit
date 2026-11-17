@@ -1,6 +1,6 @@
 ---
 name: mtk-attribution-setup
-description: Sets up MTK Attribution on a client website — installing the tag, building the field map, and adding the hidden form fields that carry attribution data into the CRM. Use this skill whenever the user says "set up MTK Attribution", "install MTK on [client]", "add the attribution fields", "what fields do I add to this form", "add MTK to Webflow / Wix / Squarespace / Gravity Forms / Elementor / Jotform / GoHighLevel / Contact Form 7 / Zoho / Framer", "the attribution fields are coming through empty", "they already use Attributer", "the form already has UTM fields", "can we reuse the fields that are already there", or any close variant where MTK Attribution is being installed on or wired into a site or form. Always use this skill for these requests — it fetches the current field list from boggsmtk.com rather than carrying its own copy, because the field names and labels must match exactly and guessing them silently breaks capture.
+description: Sets up MTK Attribution on a client website — installing the tag, building the field map, and adding the hidden form fields that carry attribution data into the CRM. Use this skill whenever the user says "set up MTK Attribution", "install MTK on [client]", "add the attribution fields", "what fields do I add to this form", "add MTK to Webflow / Wix / Squarespace / Gravity Forms / Elementor / Jotform / GoHighLevel / Contact Form 7 / Zoho / Framer", "the attribution fields are coming through empty", "they already use Attributer", "the form already has UTM fields", "can we reuse the fields that are already there", "create the MTK custom fields in GoHighLevel", "store MTK values in GHL from a webhook", or any close variant where MTK Attribution is being installed on or wired into a site or form. Always use this skill for these requests — it fetches the current field list from boggsmtk.com rather than carrying its own copy, because the field names and labels must match exactly and guessing them silently breaks capture.
 ---
 
 # MTK Attribution — setup
@@ -31,6 +31,15 @@ Platform install guides — `https://www.boggsmtk.com/products/attribution/docs/
 | Framer | `framer` | Set field names in the form — the tag matches by name |
 | Custom HTML | `custom-html` | Name hidden inputs, or read values in JS |
 | Other platforms | `other` | The universal method for any site rendering a real form |
+
+**GoHighLevel as the CRM behind a webhook.** When the site's own form (not a
+GHL form) posts its submissions to a GoHighLevel **Inbound Webhook** workflow,
+the values need contact custom fields in GHL to land in. Fetch
+`https://www.boggsmtk.com/products/attribution/docs/gohighlevel/webhook-custom-fields.md`
+and follow its "For AI assistants" section: it carries the GHL field list
+(rendered from the live field map, with each field's GHL type), the API calls
+for creating the fields when the user gives you a Private Integration token,
+and the workflow steps the user has to do by hand.
 
 Reference docs:
 
@@ -379,8 +388,8 @@ this skill whenever:
 
 - **A docs page is added, removed, or moved** — the URLs and platform slugs
   above are hardcoded, including
-  `/products/attribution/docs/fields.md` itself. If that endpoint ever moves,
-  this file is what points at it.
+  `/products/attribution/docs/fields.md` itself and the GoHighLevel webhook
+  guide's `.md`. If either endpoint ever moves, this file is what points at it.
 - **A platform's install method changes** (e.g. a form tool starts allowing
   real field names), which changes the Method column.
 - **Attributer renames a field or changes a token**, which breaks the
