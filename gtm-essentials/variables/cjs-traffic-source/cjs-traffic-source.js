@@ -1,7 +1,7 @@
 /*!
  * Marketing Toolkit — cJS – Traffic Source
- * Version: v2.2.0
- * Last updated: 2026-10-20
+ * Version: v2.3.0
+ * Last updated: 2026-11-24
  * https://github.com/whboggs/marketing-toolkit
  */
 
@@ -17,14 +17,15 @@ function() {
   // rescue — collapsed to a single string instead of channel + source.
   //
   // An ENTRY is resolved once, from the pageview that brought the visitor in, and carried
-  // through the tab in sessionStorage so popup forms and multi-step checkouts on internal
-  // pages still report the source that started the visit. A later pageview only replaces
+  // across every tab on the site in localStorage so popup forms, multi-step checkouts, and
+  // pages opened in a new tab still report the source that started the visit. Every tab
+  // shares one entry and one idle clock, like a GA4 session. A later pageview only replaces
   // the stored entry when it carries a fresh campaign signal in the URL (a click ID or a
   // UTM) or the tab has been idle for longer than the session window — internal navigation
   // never changes attribution, and neither does a mid-funnel bounce through a payment
   // gateway or an OAuth provider.
 
-  var STORE_KEY = 'cjs_traffic_source';         // sessionStorage key: {"v": "<source>", "t": <last activity ms>}
+  var STORE_KEY = 'cjs_traffic_source';         // localStorage key: {"v": "<source>", "t": <last activity ms>}
   var SESSION_TIMEOUT = 30 * 60 * 1000;         // 30 minutes, GA-style — idle longer than this = new entry
   var PAID_SOCIAL_MEDIUM = 'paid_social';       // the canonical paid-social utm_medium (always paid social)
 
@@ -126,12 +127,27 @@ function() {
     return false;
   }
 
-  // sessionStorage access that degrades to "no persistence" in private browsing / blocked storage.
+  // Entry storage. localStorage is shared by every tab on the site's origin, so a page opened
+  // in a new tab inherits the entry instead of starting over as "direct" (sessionStorage is
+  // per-tab, which is what lost it before v2.3). sessionStorage is the fallback where
+  // localStorage is blocked; reading it also carries an entry written by v2.2 or earlier
+  // through a visit that is mid-flight when the upgrade publishes. Both blocked (some private
+  // browsing modes) degrades to "no persistence": each pageview resolves on its own.
+  var STORE_AREAS = ['localStorage', 'sessionStorage'];
   function readStore() {
-    try { var raw = sessionStorage.getItem(STORE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+    for (var i = 0; i < STORE_AREAS.length; i++) {
+      try {
+        var raw = window[STORE_AREAS[i]].getItem(STORE_KEY);
+        if (raw) return JSON.parse(raw);             // first area holding an entry wins
+      } catch (e) { /* area blocked or value unreadable: try the next one */ }
+    }
+    return null;
   }
   function writeStore(value) {
-    try { sessionStorage.setItem(STORE_KEY, JSON.stringify({ v: value, t: Date.now() })); } catch (e) {}
+    var entry = JSON.stringify({ v: value, t: Date.now() });
+    for (var i = 0; i < STORE_AREAS.length; i++) {
+      try { window[STORE_AREAS[i]].setItem(STORE_KEY, entry); return; } catch (e) { /* try the next area */ }
+    }
   }
 
   // Referrer HOST only — scheme, userinfo, port, and path stripped — so a path or query string
