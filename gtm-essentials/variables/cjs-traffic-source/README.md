@@ -1,7 +1,7 @@
 # cJS – Traffic Source
 
 GTM Custom JavaScript Variable
-Last updated: October 2026
+Last updated: November 2026
 
 ---
 
@@ -11,7 +11,7 @@ This GTM Custom JavaScript variable detects and returns the traffic source for a
 
 Its classification rules mirror the [MTK Attribution](https://boggsmtk.com/products/attribution/docs/how-mtk-attribution-categorizes) engine: the same click IDs, the same `utm_medium` values, the same referrer domain lists, and the same fresh-cookie rescue — collapsed to a single string instead of a separate channel and source. If a site runs both, the two agree on where a visit came from.
 
-The variable uses **last-touch attribution within a tab session**: each new entry to the site with a fresh click ID or UTM replaces the prior value, so the conversion is credited to the channel that most recently brought the user in. SessionStorage carries the resolved value through multi-page funnels so attribution is preserved through popup forms on internal pages and multi-step checkouts.
+The variable uses **last-touch attribution within a session**: each new entry to the site with a fresh click ID or UTM replaces the prior value, so the conversion is credited to the channel that most recently brought the user in. localStorage carries the resolved value across pages and browser tabs, so attribution is preserved through popup forms on internal pages, multi-step checkouts, and pages the visitor opens in a new tab.
 
 ---
 
@@ -45,28 +45,33 @@ Referrer domains are matched against the referrer's **hostname only**, with labe
 
 ### Attribution Model
 
-This variable uses **last-touch attribution within a tab session**. The value is resolved once, on the pageview that brought the visitor in, and stored. A later pageview only re-resolves when:
+This variable uses **last-touch attribution within a session**. The value is resolved once, on the pageview that brought the visitor in, and stored. A later pageview only re-resolves when:
 
 - the URL carries a fresh campaign signal — any `utm_source`, `utm_medium`, `utm_campaign`, or any of `gclid`, `gbraid`, `wbraid`, `msclkid`, `fbclid`, `ttclid`; or
-- the tab has been idle for more than 30 minutes (GA-style session timeout); or
-- nothing is stored yet (first pageview in the tab, or storage was blocked).
+- the site has been idle for more than 30 minutes in every tab (GA-style session timeout); or
+- nothing is stored yet (first pageview of the visit, or storage was blocked).
+
+A session belongs to the browser, not the tab: every tab on the site shares one stored value and one idle clock, the way a GA4 session does.
 
 Internal navigation never changes attribution — and neither does an external referrer on its own. A mid-checkout bounce through PayPal, Stripe, or an OAuth provider comes back with a foreign referrer and no campaign signal, and the stored paid source survives it.
 
 This means:
 
 - A user who clicks a Google Ad, leaves, and returns via a Facebook Ad will be attributed to Facebook on conversion — and vice versa. The newest signal always wins, whichever platform it came from.
-- A user who clicks a Facebook Ad, browses to checkout over multiple pages, and converts is still attributed to Facebook because sessionStorage carries the resolved value through the funnel.
-- A user who leaves the tab open overnight and comes back via organic search is re-resolved as organic search.
-- A new browser session (closed tab, new browser) starts fresh — no localStorage means no cross-session attribution carryover.
+- A user who clicks a Facebook Ad, browses to checkout over multiple pages, and converts is still attributed to Facebook because localStorage carries the resolved value through the funnel.
+- A user who clicks a Google Ad and opens a page in a new tab is still attributed to Google Ads in that tab. (Before v2.3 the new tab started over and usually reported `direct`.)
+- Tabs share one value: a user who arrives from a Google Ad in one tab and then a Facebook Ad in another is attributed to Facebook in both — whichever ad brought them in most recently.
+- A user who leaves the site idle for more than 30 minutes and comes back via organic search is re-resolved as organic search, even if a tab stayed open or the browser was restarted in between.
 
-To switch to first-touch attribution: skip the re-resolve when a value is already stored, and add a localStorage layer for cross-session persistence. (Or use MTK Attribution, which reports first touch, last touch, and the full journey.)
+To switch to first-touch attribution: skip the re-resolve when a value is already stored, and drop the 30-minute expiry. (Or use MTK Attribution, which reports first touch, last touch, and the full journey.)
 
-### Funnel Persistence via SessionStorage
+### Funnel and Tab Persistence via localStorage
 
-Without persistence, multi-page funnels would lose attribution. By the second page of a checkout, `document.referrer` becomes your own domain, and click IDs disappear from the URL once the user navigates internally.
+Without persistence, multi-page funnels would lose attribution. By the second page of a checkout, `document.referrer` becomes your own domain, and click IDs disappear from the URL once the user navigates internally. A page opened in a new tab has the same problem.
 
-The variable stores a single key, `cjs_traffic_source`, holding the resolved value and the time of the last pageview: `{"v":"google_ads","t":1700000000000}`. Every pageview in the same tab reads the stored value and refreshes the timestamp, so a visitor who keeps navigating never times out.
+The variable stores a single key, `cjs_traffic_source`, holding the resolved value and the time of the last pageview: `{"v":"google_ads","t":1700000000000}`. It lives in localStorage, which every tab on the site's origin shares. Every pageview in any tab reads the stored value and refreshes the timestamp, so a visitor who keeps navigating never times out.
+
+If localStorage is blocked, the variable falls back to sessionStorage, which keeps attribution through the funnel in that one tab only. If both are blocked (some private-browsing modes), each pageview is resolved on its own. The variable also reads sessionStorage when localStorage holds nothing, so visits that were already in progress when you upgraded from v2.2 or earlier keep their source.
 
 ---
 
@@ -122,21 +127,23 @@ The same variable works for both conversion types because the underlying attribu
 - Used in Meta Pixel Purchase event as `source` parameter
 - Captures source through cart → checkout → confirmation flow
 
-Both use cases benefit from the sessionStorage persistence layer — without it, attribution would collapse to `direct` on internal pages.
+Both use cases benefit from the localStorage persistence layer — without it, attribution would collapse to `direct` on internal pages and in new tabs.
 
 ---
 
 ## Cross-Tab Behavior
 
-SessionStorage is scoped to a single browser tab. If a user opens checkout in a new tab partway through a funnel, the new tab starts fresh and re-detects from the URL, referrer, and cookies at that moment.
+Since v2.3, every tab on the site shares one stored value. If a user opens a page in a new tab partway through a visit (say, a portfolio page from the menu, or checkout from a cart), the new tab reports the source that started the visit instead of re-detecting from its own internal referrer, which almost always came out `direct`.
 
-For most flows this is fine — the new tab usually opens with the source URL intact, and a fresh `_gcl_aw` / `_fbc` cookie will still rescue a paid click. If cross-tab persistence is required (e.g. multi-tab purchase comparison flows), add a localStorage layer that writes alongside sessionStorage and reads as a fallback.
+Because the value is shared, the most recent campaign signal in **any** tab wins in **every** tab. That's the same last-touch rule applied across tabs, and it matches how a GA4 session treats a new campaign.
+
+Before v2.3 the value lived in sessionStorage, which is scoped to a single tab, so a new tab started fresh. If you're still on v2.2 or earlier, expect `direct` to be over-reported on conversions that happen in a second tab.
 
 ---
 
 ## Known Limitations
 
-- **No cross-session attribution.** Closing the browser ends the session. A user who visits via Facebook Ads on Monday and converts via direct on Wednesday will be attributed to direct on Wednesday. This is intentional last-touch behavior; use MTK Attribution for first-touch and journey reporting.
+- **No cross-session attribution.** 30 minutes without a pageview in any tab ends the session. A user who visits via Facebook Ads on Monday and converts via direct on Wednesday will be attributed to direct on Wednesday. This is intentional last-touch behavior; use MTK Attribution for first-touch and journey reporting.
 - **iOS Safari ITP** restricts cookie and storage lifetimes on Apple devices. The `_fbc` and `_gcl_aw` cookies may have shortened lifespans, which can affect the cookie rescues specifically.
 - **Untagged Meta ads look organic.** A paid Facebook click that arrives with `fbclid` but no paid-social `utm_medium` (see above) returns `facebook_organic`. This is by design — see above.
 - **Untagged landing pages with no referrer are direct.** If a user lands with no UTMs, no click ID, no referrer, and no fresh platform cookie, the visit is `direct`, and a later form submit on an internal page inherits that. UTM-tag your landing pages.
